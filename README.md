@@ -113,7 +113,7 @@ ssh ubuntu@54.200.120.171
 cd ~/nomad-scripts
 ```
 
-6. Deploy a set of existing microservices using Nomad in AWS staging env:
+6. Deploy a set of microservices (The WebApp) by using Nomad in AWS staging env:
 
 - POSTGRESQL DEPLOYMENT:
 ```bash
