@@ -1,0 +1,132 @@
+---
+#
+# Main Playbook To Prepare Deployed Nomad Cluster Nodes
+#
+- hosts: all
+  remote_user: ubuntu
+  become: yes
+  vars:
+    ansible_connection: ssh
+    ansible_python_interpreter: '{{ansible_playbook_python}}'
+    config_lint_ver: 'v1.6.0'
+
+  tasks:
+  - name: run 'apt update' to update cache if the last one is older than 1hr ago
+    apt: update_cache=yes cache_valid_time=3600
+
+  - name: set environment dependencies of cluster-node
+    apt: name={{item}} state=latest
+    loop:
+    - apt-transport-https
+    - aria2
+    - arping
+    - bash-completion
+    - build-essential
+    - ca-certificates
+    - curl
+    - dnsutils
+    - fswatch
+    - git
+    - gnupg
+    - golang
+    - ipvsadm
+    - jq
+    - jsonnet
+    - lxc-utils
+    - lxc-templates
+    - lxctl
+    - manpages-dev
+    - net-tools
+    - nfs-common
+    - nfs-kernel-server
+    - nfs4-acl-tools
+    - nfstrace
+    - nfstrace-doc
+    - nfswatch
+    - nmap
+    - postgresql-client
+    - python3-dev
+    - python3-pip
+    - sshfs
+    - sshpass
+    - socat
+    - software-properties-common
+    - tig
+    - tmux
+    - tree
+    - unzip
+    - whois
+    - yamllint
+    - zip
+
+  - name: add glusterfs ppa in ubuntu based distro
+    apt_repository:
+      repo: ppa:gluster/glusterfs-9
+
+  - name: add Nomad official GPG key
+    shell: 'curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -'
+  
+  - name: add repo with secure Nomad-engine
+    apt_repository:
+      repo: deb [arch=amd64] https://apt.releases.hashicorp.com focal main
+      state: present
+      update_cache: yes
+
+  - name: add Docker official GPG key
+    shell: 'curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg'
+
+  - name: add docker-engine repo for "Ubuntu Server - focal 20.04-LTS"
+    apt_repository:
+      repo: deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/{{ansible_distribution|lower}} {{ansible_distribution_release}} stable
+      state: present
+      update_cache: yes
+
+  - name: install container runtime engine and distributed file system
+    apt: name={{item}} state=latest
+    loop:
+    - containerd.io
+    - docker-ce
+    - docker-ce-cli
+    - glusterfs-server
+    - glusterfs-client
+    - nomad
+
+  - name: start added service and enable at boot time
+    systemd: name={{item}} state=started enabled=yes
+    loop:
+    - containerd
+    - docker
+    - glusterd
+    - nomad
+
+#
+# manage snaps
+#
+  - name: install classic-snap packages
+    snap: name={{item}} state=present classic=yes
+    loop:
+    - aws-cli
+    # - doctl
+    # - google-cloud-sdk
+    # - microk8s
+#
+# manage python
+#
+  - name: install python packages
+    pip: name={{item}} state=latest executable=pip3
+    loop:
+    # - pip
+    - docker-compose
+    - docker
+    - httpie
+    - mdv
+
+#
+# manage software distributed in binary format
+#
+  - name: download and install "config-lint"
+    get_url:
+      url: https://github.com/stelligent/config-lint/releases/download/{{config_lint_ver}}/config-lint_Linux_x86_64.tar.gz
+      dest: /usr/local/bin/config-lint
+      mode: 0755
+
