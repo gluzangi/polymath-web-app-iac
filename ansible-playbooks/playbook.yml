@@ -11,6 +11,18 @@
     config_lint_ver: 'v1.6.0'
 
   tasks:
+  - name: add official GPG signing keys of third-party distributed tools
+    apt_key: url={{item}} state=present
+    loop:
+    - https://download.docker.com/linux/ubuntu/gpg
+    - https://download.gluster.org/pub/gluster/glusterfs/9/rsa.pub
+    - https://apt.releases.hashicorp.com/gpg
+
+  - name: add repository list for third-party distributed tools
+    copy:
+      src: ./templates/
+      dest: /etc/apt/sources.list.d/
+
   - name: run 'apt update' to update cache if the last one is older than 1hr ago
     apt: update_cache=yes cache_valid_time=3600
 
@@ -59,29 +71,7 @@
     - yamllint
     - zip
 
-  - name: add glusterfs ppa in ubuntu based distro
-    apt_repository:
-      repo: ppa:gluster/glusterfs-9
-
-  - name: add Nomad official GPG key
-    shell: 'curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -'
-  
-  - name: add repo with secure Nomad-engine
-    apt_repository:
-      repo: deb [arch=amd64] https://apt.releases.hashicorp.com focal main
-      state: present
-      update_cache: yes
-
-  - name: add Docker official GPG key
-    shell: 'curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg'
-
-  - name: add docker-engine repo for "Ubuntu Server - focal 20.04-LTS"
-    apt_repository:
-      repo: deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/{{ansible_distribution|lower}} {{ansible_distribution_release}} stable
-      state: present
-      update_cache: yes
-
-  - name: install container runtime engine and distributed file system
+  - name: install container runtime and orchestration engine with distributed file system
     apt: name={{item}} state=latest
     loop:
     - containerd.io
@@ -106,16 +96,14 @@
     snap: name={{item}} state=present classic=yes
     loop:
     - aws-cli
-    # - doctl
-    # - google-cloud-sdk
-    # - microk8s
+    - doctl
+    - google-cloud-sdk
 #
 # manage python
 #
   - name: install python packages
     pip: name={{item}} state=latest executable=pip3
     loop:
-    # - pip
     - docker-compose
     - docker
     - httpie
@@ -124,9 +112,9 @@
 #
 # manage software distributed in binary format
 #
-  - name: download and install "config-lint"
+  - name: download and install "ctop.sh"
     get_url:
-      url: https://github.com/stelligent/config-lint/releases/download/{{config_lint_ver}}/config-lint_Linux_x86_64.tar.gz
-      dest: /usr/local/bin/config-lint
+      url: https://github.com/bcicen/ctop/releases/download/0.7.6/ctop-0.7.6-linux-amd64
+      dest: /usr/local/bin/ctop
       mode: 0755
 
