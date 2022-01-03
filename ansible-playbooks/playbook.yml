@@ -8,7 +8,7 @@
   vars:
     ansible_connection: ssh
     ansible_python_interpreter: '{{ansible_playbook_python}}'
-    config_lint_ver: 'v1.6.0'
+    ctop_ver: '0.7.6'
 
   tasks:
   - name: add official GPG signing keys of third-party distributed tools
@@ -112,9 +112,9 @@
 #
 # manage software distributed in binary format
 #
-  - name: download and install "ctop.sh"
+  - name: download and install "ctop.sh" - cli container stats tool
     get_url:
-      url: https://github.com/bcicen/ctop/releases/download/0.7.6/ctop-0.7.6-linux-amd64
+      url: https://github.com/bcicen/ctop/releases/download/{{ ctop_ver }}/ctop-{{ ctop_ver }}-linux-amd64
       dest: /usr/local/bin/ctop
       mode: 0755
 
